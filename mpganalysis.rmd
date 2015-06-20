@@ -1,0 +1,104 @@
+---
+title: "Effect of automatic and manual transmission on mpg in cars"
+author: "Sukalpo Mitra"
+date: "Sunday, June 21, 2015"
+output: pdf_document
+---
+
+# Introduction
+
+Looking at a data set of a collection of cars, we are interested in exploring the relationship between a set of variables and miles per gallon (MPG) (outcome). We will be using the mtcars dataset in R to do our analysis. We will be trying to answer the following questions:
+
+- "Is an automatic or manual transmission better for MPG"
+- "Quantify the MPG difference between automatic and manual transmissions"
+
+# Executive Summary
+
+A simple model was first designed (mpg ~ factor(am)) to answer the question being asked. But since we found the R squared to be low and other variables in the data set having linear relationship with mpg we designed a multivariate regression model that ultimately increased the R squared value to 83.4%. The final verdict being manual transmission being better for MPG than automatic. 1.8 is the estimated expected increase in miles per gallon when compared manual transmission to automatic transmission.
+
+# Analysis
+
+We first load the dataset mtcars and the ggplot2 package as we will be using to create some exploratory graphs.
+
+```{r}
+library(datasets)
+library(ggplot2)
+data(mtcars)
+
+```
+
+Here is a basic summary about the variables in the dataset.
+
+```{r}
+str(mtcars)
+```
+
+The am variable stores the data for transmission (0 = automatic, 1 = manual).
+Now we create an exploratory box plot to have a brief understanding of the effect of transmission on mpg.
+
+```{r, eval=FALSE}
+ggplot(mtcars, aes(x=factor(am), y=mpg, fill=factor(am)))+geom_boxplot()+ggtitle("Analyzing mpg ~ am data")
+```
+
+From the graph it is evident that there is a positive effect on mpg in cars having manual transmission. Now let us come up with the linear model coefficients that should strengthen our exploratory analysis. We will fit a model with mpg as the outcome that includes transmission as a factor variable. The adjusted estimate for the expected change in mpg comparing manual transmission to automatic.
+
+```{r}
+fit <- lm(mpg ~ factor(am), data = mtcars)
+summary(fit)$coef
+summary(fit)$r.squared
+```
+
+Thus from the model we see that coefficient of manual transmission, 7.24 is the estimated expected increase in miles per gallon when compared manual transmission to automatic transmission. So manual transmission has a higher coefficient than manual transmission. And this is in fact what we see in our exploratory box plot. The lower p-value and higher t statistic also confirms that. But we also see that adjusted R square is 0.338 which means only 33.8% of the variance is explained by our model. Also a pairs plot show that the other variables in the data set also have a linear relationship with mpg
+
+```{r, eval=FALSE}
+pairs(mtcars, panel = panel.smooth)
+```
+
+Thus we try a multivariate model to see if we can explain more of the variance.
+
+```{r}
+fit1 <- lm(mpg ~ ., data = mtcars)
+```
+
+Before doing anything we see the variance inflation factor or vif of the new model to find out which variable to include or exclude
+
+```{r}
+require(car)
+library(car)
+sqrt(vif(fit1))
+```
+
+From the vif function we see that cyl, disp, hp and wt have all high VIF which means they are correlated. So we choose these 4 variables along with am to be in ur final model.
+
+```{r}
+fit2 <- lm(mpg ~ factor(cyl) + disp + hp + wt + factor(am), data = mtcars)
+summary(fit2)$coef
+summary(fit2)$r.squared
+```
+
+In this model too manual transmission has a higher coefficient than automatic transmission but now the R squared vaue has increased to 83.4%. We call the anova function to see if this model is a good fit than our simple model.
+
+```{r}
+anova(fit, fit2)
+```
+
+And in fact the very low p-value does signify that the final model is a good fit. We run a diagnostic to be doubly sure. And lastly some reesidual plots to check if any pattern is there. A pattern less residual plot signifies a good fit.
+
+
+```{r, eval=FALSE}
+influence.measures(fit2)
+plot(fit2)
+```
+
+# Appendix
+
+```{r, echo=FALSE}
+par(mfrow = c(1,2))
+ggplot(mtcars, aes(x=factor(am), y=mpg, fill=factor(am)))+geom_boxplot()+ggtitle("Analyzing mpg ~ am data")
+pairs(mtcars, panel = panel.smooth)
+```
+
+```{r, echo=FALSE}
+par(mfrow = c(2,2))
+plot(fit2)
+```
